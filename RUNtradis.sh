@@ -21,16 +21,20 @@ set -euo pipefail
 usage() {
     cat <<'EOF'
 Usage:
-    sbatch RUNtradis.sh INPUT_FASTQ OUTPUT_DIRECTORY
+    sbatch RUNtradis.sh INPUT_FASTQ OUTPUT_DIRECTORY REFERENCE_GENOME TRANSPOSON_TAG
 
 Arguments:
     INPUT_FASTQ         FASTQ file or directory containing FASTQ files
     OUTPUT_DIRECTORY    Output directory name (must not already exist)
+    REFERENCE_GENOME    Reference genome for mapping to (in fasta format)
+    TRANSPOSON_TAG      DNA sequence of transposon tag e.g. CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 
 Example:
     sbatch RUNtradis.sh \
         /path/to/fastq_directory \
-        results
+        results \
+	/gpfs01/home/mbzlld/data/tradis/reference/GCF_000750555.1_ASM75055v1_genomic.fna \
+	CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 EOF
     exit 1
 }
@@ -39,12 +43,14 @@ EOF
 # Parse arguments
 ###############################################################################
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 4 ]]; then
     usage
 fi
 
 INPUT_FASTQ="$1"
 OUTPUT_DIRECTORY="$2"
+REFERENCE_GENOME="$3"
+TRANSPOSON_TAG="$4"
 
 ###############################################################################
 # Configuration
@@ -128,37 +134,6 @@ if [[ ! -w "$OUTPUT_DIRECTORY" ]]; then
 fi
 
 ###############################################################################
-# Temporary-directory configuration
-###############################################################################
-
-###  TMP_ROOT="${TMPDIR:-/tmp}"
-###  JOB_TMP="${TMP_ROOT}/dorado_${SLURM_JOB_ID:-manual}"
-###  
-###  mkdir -p "$JOB_TMP"
-###  
-###  export TMPDIR="$JOB_TMP"
-###  export TMP="$JOB_TMP"
-###  export TEMP="$JOB_TMP"
-###  
-###  cleanup() {
-###      local status=$?
-###  
-###      echo
-###  
-###      if [[ $status -eq 0 ]]; then
-###          rm -rf "$JOB_TMP"
-###          echo "Temporary directory removed: $JOB_TMP"
-###      else
-###          echo "Dorado exited with status $status." >&2
-###          echo "Temporary directory retained: $JOB_TMP" >&2
-###      fi
-###  
-###      return "$status"
-###  }
-###  
-###  trap cleanup EXIT
-
-###############################################################################
 # Report configuration
 ###############################################################################
 
@@ -179,11 +154,11 @@ echo "fastp location:      $(command -v fastp)"
 echo "fastp version:       $(fastp --version 2>&1 | head -n 1)"
 echo "cutadapt location:   $(command -v cutadapt)"
 echo "cutadapt version:    $(cutadapt --version 2>&1 | head -n 1)"
+echo
 echo "Input FASTQ:         $INPUT_FASTQ"
 echo "Output directory:    $OUTPUT_DIRECTORY"
 echo
 echo "CPU threads:         $THREADS"
-#echo "Temporary directory: $JOB_TMP"
 echo
 
 ###############################################################################
@@ -227,6 +202,19 @@ CUTADAPT_COMMAND=(
     -o "$OUTPUT_DIRECTORY"/trimmed_fastqs/2_cutadapt/$(basename ${INPUT_FASTQ})
     "$OUTPUT_DIRECTORY"/trimmed_fastqs/1_fastp/$(basename ${INPUT_FASTQ}))
 
+TRADIS_COMMAND=(
+    bacteria_tradis
+    -v
+    --smalt
+    --smalt_r 0
+    --smalt_k 10
+    --smalt_s 1
+    --smalt_y .90
+    -m 0
+    -mm 15
+    -f files.txt
+    -t "$TRANSPOSON_TAG"
+    -r "$REFERENCE_GENOME")
 
 ###############################################################################
 # Run commands 
