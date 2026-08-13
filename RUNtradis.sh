@@ -1,5 +1,4 @@
 #!/bin/bash
-START_TIME=$(date +%s)
 
 # script to perform read trimming for tradis
 # and run tradis with optimisation
@@ -13,6 +12,7 @@ START_TIME=$(date +%s)
 #SBATCH --time=08:00:00
 #SBATCH --output=RUNtradis_%j.out
 
+START_TIME=$(date +%s)
 set -euo pipefail
 
 ###############################################################################
@@ -280,7 +280,7 @@ TRADIS_COMMAND=(
     --smalt_y .90
     -m 0
     -mm 15
-    -f "$OUTPUT_DIRECTORY"/tradis/files.txt
+    -f "$OUTPUT_DIRECTORY"/biotradis/files.txt
     -t "$TRANSPOSON_TAG"
     -r "$REFERENCE_GENOME")
 
@@ -329,13 +329,13 @@ echo
 ###################
 
 echo "Running tradis command:"
-echo "$INPUT_FASTQ" > "$OUTPUT_DIRECTORY"/tradis/files.txt
+echo "$INPUT_FASTQ" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
 printf ' %q' "${TRADIS_COMMAND[@]}" 
 echo
 echo
 source $HOME/.bash_profile
 conda activate biotradis
-cd "$OUTPUT_DIRECTORY"/tradis
+cd "$OUTPUT_DIRECTORY"/biotradis
 "${TRADIS_COMMAND[@]}"
 conda deactivate
 echo
