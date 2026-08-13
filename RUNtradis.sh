@@ -1,4 +1,5 @@
 #!/bin/bash
+START_TIME=$(date +%s)
 
 # script to perform read trimming for tradis
 # and run tradis with optimisation
@@ -21,36 +22,101 @@ set -euo pipefail
 usage() {
     cat <<'EOF'
 Usage:
-    sbatch RUNtradis.sh INPUT_FASTQ OUTPUT_DIRECTORY REFERENCE_GENOME TRANSPOSON_TAG
+    sbatch RUNtradis.sh --input INPUT_FASTQ --output OUTPUT_DIRECTORY [OPTIONS]
 
-Arguments:
-    INPUT_FASTQ         FASTQ file or directory containing FASTQ files
-    OUTPUT_DIRECTORY    Output directory name (must not already exist)
-    REFERENCE_GENOME    Reference genome for mapping to (in fasta format)
-    TRANSPOSON_TAG      DNA sequence of transposon tag e.g. CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
+Required arguments:
+    -i, --input       FASTQ file or directory containing FASTQ files
+    -o, --output      Output directory name (must not already exist)
+
+Optional arguments:
+    -r, --reference   Reference genome in FASTA format
+                      Default: /share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna
+
+    -t, --tag         DNA sequence of transposon tag
+                      Default: CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
+
+    -h, --help        Show this help message
 
 Example:
     sbatch RUNtradis.sh \
-        /path/to/fastq_directory \
-        results \
-	/gpfs01/home/mbzlld/data/tradis/reference/GCF_000750555.1_ASM75055v1_genomic.fna \
-	CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
+        --input /path/to/fastq_directory \
+        --output results \
+        --reference /path/to/reference.fasta \
+        --tag CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 EOF
     exit 1
 }
 
 ###############################################################################
+# Default values
+###############################################################################
+
+REFERENCE_GENOME="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna"
+TRANSPOSON_TAG="CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG"
+
+###############################################################################
 # Parse arguments
 ###############################################################################
 
-if [[ $# -ne 4 ]]; then
+TEMP=$(getopt \
+    --options i:o:r:t:h \
+    --longoptions input:,output:,reference:,tag:,help \
+    --name "$0" \
+    -- "$@"
+)
+
+if [[ $? -ne 0 ]]; then
+    echo "ERROR: Failed to parse arguments." >&2
     usage
 fi
 
-INPUT_FASTQ="$1"
-OUTPUT_DIRECTORY="$2"
-REFERENCE_GENOME="$3"
-TRANSPOSON_TAG="$4"
+eval set -- "$TEMP"
+
+while true; do
+    case "$1" in
+        -i|--input)
+            INPUT_FASTQ="$2"
+            shift 2
+            ;;
+        -o|--output)
+            OUTPUT_DIRECTORY="$2"
+            shift 2
+            ;;
+        -r|--reference)
+            REFERENCE_GENOME="$2"
+            shift 2
+            ;;
+        -t|--tag)
+            TRANSPOSON_TAG="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "ERROR: Unexpected argument: $1" >&2
+            usage
+            ;;
+    esac
+done
+
+###############################################################################
+# Check required arguments
+###############################################################################
+
+if [[ -z "${INPUT_FASTQ:-}" ]]; then
+    echo "ERROR: --input is required." >&2
+    usage
+fi
+
+if [[ -z "${OUTPUT_DIRECTORY:-}" ]]; then
+    echo "ERROR: --output is required." >&2
+    usage
+fi
 
 ###############################################################################
 # Configuration
@@ -157,6 +223,8 @@ echo "cutadapt version:    $(cutadapt --version 2>&1 | head -n 1)"
 echo
 echo "Input FASTQ:         $INPUT_FASTQ"
 echo "Output directory:    $OUTPUT_DIRECTORY"
+echo "Reference genome:    $REFERENCE_GENOME"
+echo "Transposon tag:      $TRANSPOSON_TAG"
 echo
 echo "CPU threads:         $THREADS"
 echo
@@ -212,7 +280,7 @@ TRADIS_COMMAND=(
     --smalt_y .90
     -m 0
     -mm 15
-    -f files.txt
+    -f "$OUTPUT_DIRECTORY"/tradis/files.txt
     -t "$TRANSPOSON_TAG"
     -r "$REFERENCE_GENOME")
 
@@ -223,7 +291,9 @@ TRADIS_COMMAND=(
 echo "Running fastqc command:"
 printf ' %q' "${FASTQC_COMMAND[@]}"
 echo
+echo
 "${FASTQC_COMMAND[@]}"
+echo
 echo
 
 ###################
@@ -231,7 +301,9 @@ echo
 echo "Running multiqc command:"
 printf ' %q' "${MULTIQC_COMMAND[@]}"
 echo
+echo
 "${MULTIQC_COMMAND[@]}"
+echo
 echo
 
 ###################
@@ -239,7 +311,9 @@ echo
 echo "Running fastp command:"
 printf ' %q' "${FASTP_COMMAND[@]}"
 echo
+echo
 "${FASTP_COMMAND[@]}"
+echo
 echo
 
 ###################
@@ -247,25 +321,25 @@ echo
 echo "Running cutadapt command:"
 printf ' %q' "${CUTADAPT_COMMAND[@]}"
 echo
+echo
 "${CUTADAPT_COMMAND[@]}"
 echo
-
-###############################################################################
-# Validate output
-###############################################################################
-
-###  if [[ ! -s "$OUTPUT_BAM" ]]; then
-###      echo "ERROR: Dorado completed but the output BAM is empty:" >&2
-###      echo "       $OUTPUT_BAM" >&2
-###      exit 1
-###  fi
-
 echo
-echo "fastqc and multiqc quality control checks completed successfully."
-echo "fastp and cutadapt read trimming completed successfully."
-echo "Completion time: $(date)"
-#echo "Output BAM:      $OUTPUT_BAM"
-#echo "Output size:     $(du -h "$OUTPUT_BAM" | cut -f1)"
+
+###################
+
+echo "Running tradis command:"
+echo "$INPUT_FASTQ" > "$OUTPUT_DIRECTORY"/tradis/files.txt
+printf ' %q' "${TRADIS_COMMAND[@]}" 
+echo
+echo
+source $HOME/.bash_profile
+conda activate biotradis
+cd "$OUTPUT_DIRECTORY"/tradis
+"${TRADIS_COMMAND[@]}"
+conda deactivate
+echo
+echo
 
 ###############################################################################
 # Cleanup environment
@@ -275,4 +349,28 @@ module unload fastqc-uoneasy/0.12.1-Java-11
 module unload multiqc-uoneasy/1.14-foss-2023a
 module unload fastp-uoneasy/0.23.4-GCC-12.3.0
 module unload cutadapt-uon/gcc12.3.0/4.6
+
+###############################################################################
+# Run summary
+###############################################################################
+
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MAX_RSS_KB=$(sstat -j "${SLURM_JOB_ID}.batch" \
+    --format=MaxRSS \
+    --noheader | tr -d ' ')
+MAX_RSS_GB=$(awk "BEGIN {printf \"%.2f\", $MAX_RSS_KB / 1024 / 1024}")
+
+echo
+echo "========================================"
+echo "RUN SUMMARY"
+echo "========================================"
+echo
+echo "RUNtradis.sh script completed."
+echo
+printf 'Total run time: %02d:%02d:%02d\n' $((ELAPSED / 3600)) $(((ELAPSED % 3600) / 60)) $((ELAPSED % 60))
+echo
+echo "Completion time: $(date)"
+echo
+echo "Maximum memory: ${MAX_RSS_GB} GB"
 
