@@ -137,6 +137,9 @@ module load multiqc-uoneasy/1.14-foss-2023a
 module load fastp-uoneasy/0.23.4-GCC-12.3.0
 module load cutadapt-uon/gcc12.3.0/4.6
 
+echo
+echo "... software loaded successfully"
+
 ###############################################################################
 # Validate software and input
 ###############################################################################
