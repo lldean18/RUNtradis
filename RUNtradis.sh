@@ -25,7 +25,7 @@ Usage:
     sbatch RUNtradis.sh --input INPUT_FASTQ --output OUTPUT_DIRECTORY [OPTIONS]
 
 Required arguments:
-    -i, --input       FASTQ file or directory containing FASTQ files
+    -i, --input       input FASTQ file (must be compressed with gzip)
     -o, --output      Output directory name (must not already exist)
 
 Optional arguments:
@@ -42,7 +42,7 @@ Optional arguments:
 
 Example:
     sbatch RUNtradis.sh \
-        --input /path/to/fastq_directory \
+        --input /path/to/file.fastq.gz \
         --output results \
         --reference /path/to/reference.fasta \
         --annotation /path/to/annotation.embl \
