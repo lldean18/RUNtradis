@@ -32,8 +32,8 @@ Optional arguments:
     -r, --reference   Reference genome in FASTA format
                       Default: /share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna
 
-    -a, --annotation  Genome annotation file
-                      Default: /share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.gff
+    -a, --annotation  Genome annotation file (must be in .embl format)
+                      Default: /share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.embl
 
     -t, --tag         DNA sequence of transposon tag
                       Default: CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
@@ -45,7 +45,7 @@ Example:
         --input /path/to/fastq_directory \
         --output results \
         --reference /path/to/reference.fasta \
-        --annotation /path/to/annotation.gff \
+        --annotation /path/to/annotation.embl \
         --tag CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 EOF
     exit 1
@@ -56,7 +56,7 @@ EOF
 ###############################################################################
 
 REFERENCE_GENOME="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna"
-GENOME_ANNOTATION="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.gff"
+GENOME_ANNOTATION="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.embl"
 TRANSPOSON_TAG="CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG"
 
 ###############################################################################
