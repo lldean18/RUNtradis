@@ -32,6 +32,9 @@ Optional arguments:
     -r, --reference   Reference genome in FASTA format
                       Default: /share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna
 
+    -a, --annotation  Genome annotation file
+                      Default: /share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.gff
+
     -t, --tag         DNA sequence of transposon tag
                       Default: CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 
@@ -42,6 +45,7 @@ Example:
         --input /path/to/fastq_directory \
         --output results \
         --reference /path/to/reference.fasta \
+        --annotation /path/to/annotation.gff \
         --tag CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 EOF
     exit 1
@@ -52,6 +56,7 @@ EOF
 ###############################################################################
 
 REFERENCE_GENOME="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna"
+GENOME_ANNOTATION="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.gff"
 TRANSPOSON_TAG="CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG"
 
 ###############################################################################
@@ -59,8 +64,8 @@ TRANSPOSON_TAG="CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG"
 ###############################################################################
 
 TEMP=$(getopt \
-    --options i:o:r:t:h \
-    --longoptions input:,output:,reference:,tag:,help \
+    --options i:o:r:a:t:h \
+    --longoptions input:,output:,reference:,annotation:,tag:,help \
     --name "$0" \
     -- "$@"
 )
@@ -84,6 +89,10 @@ while true; do
             ;;
         -r|--reference)
             REFERENCE_GENOME="$2"
+            shift 2
+            ;;
+        -a|--annotation)
+            GENOME_ANNOTATION="$2"
             shift 2
             ;;
         -t|--tag)
@@ -287,6 +296,12 @@ TRADIS_COMMAND=(
     -t "$TRANSPOSON_TAG"
     -r "$REFERENCE_GENOME")
 
+TRADIS_GIS_COMMAND=(
+    tradis_gene_insert_sites
+    "$GENOME_ANNOTATION"
+    "$OUTPUT_DIRECTORY"/biotradis/*.insert_site_plot.gz
+    )
+
 ###############################################################################
 # Run commands 
 ###############################################################################
@@ -340,6 +355,16 @@ source $HOME/.bash_profile
 conda activate biotradis
 cd "$OUTPUT_DIRECTORY"/biotradis
 "${TRADIS_COMMAND[@]}"
+echo
+echo
+
+###################
+
+echo "Running tradis_gene_insert_sites command:"
+printf ' %q' "${TRADIS_GIS_COMMAND[@]}" 
+echo
+echo
+"${TRADIS_GIS_COMMAND[@]}"
 conda deactivate
 echo
 echo
@@ -359,10 +384,6 @@ module unload cutadapt-uon/gcc12.3.0/4.6
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
-MAX_RSS_KB=$(sstat -j "${SLURM_JOB_ID}.batch" \
-    --format=MaxRSS \
-    --noheader | tr -d ' ')
-MAX_RSS_GB=$(awk "BEGIN {printf \"%.2f\", $MAX_RSS_KB / 1024 / 1024}")
 
 echo
 echo "========================================"
@@ -374,6 +395,4 @@ echo
 printf 'Total run time: %02d:%02d:%02d\n' $((ELAPSED / 3600)) $(((ELAPSED % 3600) / 60)) $((ELAPSED % 60))
 echo
 echo "Completion time: $(date)"
-echo
-echo "Maximum memory: ${MAX_RSS_GB} GB"
 
