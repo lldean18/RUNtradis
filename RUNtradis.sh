@@ -357,8 +357,6 @@ echo "$INPUT_FASTQ" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
 printf ' %q' "${TRADIS_COMMAND[@]}" 
 echo
 echo
-#source $HOME/.bash_profile
-#conda activate biotradis
 cd "$OUTPUT_DIRECTORY"/biotradis
 "${TRADIS_COMMAND[@]}"
 echo
@@ -371,7 +369,6 @@ printf ' %q' "${TRADIS_GIS_COMMAND[@]}"
 echo
 echo
 "${TRADIS_GIS_COMMAND[@]}"
-#conda deactivate
 echo
 echo
 
