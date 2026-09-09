@@ -145,6 +145,9 @@ module load fastqc-uoneasy/0.12.1-Java-11
 module load multiqc-uoneasy/1.14-foss-2023a
 module load fastp-uoneasy/0.23.4-GCC-12.3.0
 module load cutadapt-uon/gcc12.3.0/4.6
+module load biotradis-uon/1.4.5
+source /gpfs01/software/easybuild5-uon/software/Miniforge3/25.3.0-3/etc/profile.d/conda.sh
+conda activate /gpfs01/software/conda-extras/biotradis-1.4.5/envs
 
 echo
 echo "... software loaded successfully"
@@ -165,6 +168,7 @@ check_command fastqc
 check_command multiqc
 check_command fastp
 check_command cutadapt
+check_command bacteria_tradis
 
 if [[ ! -e "$INPUT_FASTQ" ]]; then
     echo "ERROR: Input FASTQ file or directory does not exist:" >&2
@@ -232,6 +236,8 @@ echo "fastp location:      $(command -v fastp)"
 echo "fastp version:       $(fastp --version 2>&1 | head -n 1)"
 echo "cutadapt location:   $(command -v cutadapt)"
 echo "cutadapt version:    $(cutadapt --version 2>&1 | head -n 1)"
+echo "biotradis location:  $(command -v bacteria_tradis)"
+echo "biotradis version:   1.4.5"
 echo
 echo "Input FASTQ:         $INPUT_FASTQ"
 echo "Output directory:    $OUTPUT_DIRECTORY"
@@ -299,7 +305,7 @@ TRADIS_COMMAND=(
 TRADIS_GIS_COMMAND=(
     tradis_gene_insert_sites
     "$GENOME_ANNOTATION"
-    "$OUTPUT_DIRECTORY"/biotradis/*.insert_site_plot.gz
+    "$OUTPUT_DIRECTORY"/biotradis/biotradis.insert_site_plot.gz
     )
 
 ###############################################################################
@@ -351,8 +357,8 @@ echo "$INPUT_FASTQ" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
 printf ' %q' "${TRADIS_COMMAND[@]}" 
 echo
 echo
-source $HOME/.bash_profile
-conda activate biotradis
+#source $HOME/.bash_profile
+#conda activate biotradis
 cd "$OUTPUT_DIRECTORY"/biotradis
 "${TRADIS_COMMAND[@]}"
 echo
@@ -365,7 +371,7 @@ printf ' %q' "${TRADIS_GIS_COMMAND[@]}"
 echo
 echo
 "${TRADIS_GIS_COMMAND[@]}"
-conda deactivate
+#conda deactivate
 echo
 echo
 
@@ -377,6 +383,8 @@ module unload fastqc-uoneasy/0.12.1-Java-11
 module unload multiqc-uoneasy/1.14-foss-2023a
 module unload fastp-uoneasy/0.23.4-GCC-12.3.0
 module unload cutadapt-uon/gcc12.3.0/4.6
+module unload biotradis-uon/1.4.5
+conda deactivate
 
 ###############################################################################
 # Run summary
