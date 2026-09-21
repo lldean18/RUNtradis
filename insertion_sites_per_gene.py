@@ -576,6 +576,127 @@ def write_results(results, output_file):
 
     print(f"\nResults written to: {output_file}")
 
+# version with 2 separate plots and top outlier genes labelled
+def make_plot(results1, results2, output_file):
+    """
+    Plot two separate histograms, one above the other.
+
+    The two histograms have independent x-axis scales so that
+    distributions with very different ranges can be seen clearly.
+
+    The two highest-scoring genes in each group are labelled.
+    """
+
+    values1 = [result["total"] for result in results1]
+    values2 = [result["total"] for result in results2]
+
+    if not values1:
+        raise ValueError(
+            "No genes with annotations were found in the essential genes list."
+        )
+
+    if not values2:
+        raise ValueError(
+            "No genes with annotations were found in the non-essential genes list."
+        )
+
+    # Create two vertically stacked plots with independent x axes.
+    fig, axes = plt.subplots(
+        2,
+        1,
+        figsize=(10, 10)
+    )
+
+    # ---------------------------------------------------------
+    # Essential genes
+    # ---------------------------------------------------------
+
+    axes[0].hist(
+        values1,
+        bins=200,
+        alpha=0.7
+    )
+
+    axes[0].set_xlabel("Insertion sites per gene")
+    axes[0].set_ylabel("Number of genes")
+    axes[0].set_title("Essential genes")
+
+    # Find the two highest-scoring essential genes.
+    top1 = sorted(
+        results1,
+        key=lambda result: result["total"],
+        reverse=True
+    )[:2]
+
+    # Label the two highest-scoring genes with automatic offsets.
+    offsets = [-25, 25]
+
+    for result, offset in zip(top1, offsets):
+        axes[0].annotate(
+            result["gene"],
+            xy=(result["total"], 0),
+            xytext=(offset, 10),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            rotation=90
+        )
+
+    # ---------------------------------------------------------
+    # Non-essential genes
+    # ---------------------------------------------------------
+
+    axes[1].hist(
+        values2,
+        bins=200,
+        alpha=0.7
+    )
+
+    axes[1].set_xlabel("Insertion sites per gene")
+    axes[1].set_ylabel("Number of genes")
+    axes[1].set_title("Non-essential genes")
+
+    # Find the two highest-scoring non-essential genes.
+    top2 = sorted(
+        results2,
+        key=lambda result: result["total"],
+        reverse=True
+    )[:2]
+
+    # Label the two highest-scoring genes with automatic offsets.
+    for result, offset in zip(top2, offsets):
+        axes[1].annotate(
+            result["gene"],
+            xy=(result["total"], 0),
+            xytext=(offset, 10),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            rotation=90
+        )
+
+    fig.suptitle(
+        "Distribution of insertion sites per gene",
+        fontsize=16
+    )
+
+    plt.tight_layout()
+
+    # Leave room for the overall title.
+    plt.subplots_adjust(
+        top=0.92
+    )
+
+    plt.savefig(
+        output_file,
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.close()
+
+    print(f"Plot written to: {output_file}")
+
 
 ## NEW VERSION OF THIS FUNCTION TO SPLIT PLOT IN 2
 ##  def make_plot(results1, results2, output_file):
@@ -657,80 +778,80 @@ def write_results(results, output_file):
 ##      print(f"Plot written to: {output_file}")
 
 # newest version of function
-def make_plot(results1, results2, output_file):
-    """
-    Plot the distribution of total insertion sites per gene
-    for the two gene lists.
-    """
-
-    values1 = [result["total"] for result in results1]
-    values2 = [result["total"] for result in results2]
-
-    if not values1:
-        raise ValueError(
-            "No genes with annotations were found in gene list 1."
-        )
-
-    if not values2:
-        raise ValueError(
-            "No genes with annotations were found in gene list 2."
-        )
-
-    plt.figure(figsize=(10, 7))
-
-    # Width of each histogram bin.
-    bin_width = 100
-
-    # Create separate bin ranges, but with the same bin width.
-    min1 = min(values1)
-    max1 = max(values1)
-
-    min2 = min(values2)
-    max2 = max(values2)
-
-    bins1 = range(
-        int(min1 // bin_width) * bin_width,
-        int(max1 // bin_width + 2) * bin_width,
-        bin_width
-    )
-
-    bins2 = range(
-        int(min2 // bin_width) * bin_width,
-        int(max2 // bin_width + 2) * bin_width,
-        bin_width
-    )
-
-    plt.hist(
-        values1,
-        bins=bins1,
-        alpha=0.7,
-        label="essential genes",
-    )
-
-    plt.hist(
-        values2,
-        bins=bins2,
-        alpha=0.7,
-        label="non-essential genes",
-    )
-
-    plt.xlabel("Insertion sites per gene")
-    plt.ylabel("Number of genes")
-    plt.title("Distribution of insertion sites per gene")
-
-    plt.legend()
-
-    plt.tight_layout()
-
-    plt.savefig(
-        output_file,
-        dpi=300,
-        bbox_inches="tight"
-    )
-
-    plt.close()
-
-    print(f"Plot written to: {output_file}")
+#####  def make_plot(results1, results2, output_file):
+#####      """
+#####      Plot the distribution of total insertion sites per gene
+#####      for the two gene lists.
+#####      """
+#####  
+#####      values1 = [result["total"] for result in results1]
+#####      values2 = [result["total"] for result in results2]
+#####  
+#####      if not values1:
+#####          raise ValueError(
+#####              "No genes with annotations were found in gene list 1."
+#####          )
+#####  
+#####      if not values2:
+#####          raise ValueError(
+#####              "No genes with annotations were found in gene list 2."
+#####          )
+#####  
+#####      plt.figure(figsize=(10, 7))
+#####  
+#####      # Width of each histogram bin.
+#####      bin_width = 100
+#####  
+#####      # Create separate bin ranges, but with the same bin width.
+#####      min1 = min(values1)
+#####      max1 = max(values1)
+#####  
+#####      min2 = min(values2)
+#####      max2 = max(values2)
+#####  
+#####      bins1 = range(
+#####          int(min1 // bin_width) * bin_width,
+#####          int(max1 // bin_width + 2) * bin_width,
+#####          bin_width
+#####      )
+#####  
+#####      bins2 = range(
+#####          int(min2 // bin_width) * bin_width,
+#####          int(max2 // bin_width + 2) * bin_width,
+#####          bin_width
+#####      )
+#####  
+#####      plt.hist(
+#####          values1,
+#####          bins=bins1,
+#####          alpha=0.7,
+#####          label="essential genes",
+#####      )
+#####  
+#####      plt.hist(
+#####          values2,
+#####          bins=bins2,
+#####          alpha=0.7,
+#####          label="non-essential genes",
+#####      )
+#####  
+#####      plt.xlabel("Insertion sites per gene")
+#####      plt.ylabel("Number of genes")
+#####      plt.title("Distribution of insertion sites per gene")
+#####  
+#####      plt.legend()
+#####  
+#####      plt.tight_layout()
+#####  
+#####      plt.savefig(
+#####          output_file,
+#####          dpi=300,
+#####          bbox_inches="tight"
+#####      )
+#####  
+#####      plt.close()
+#####  
+#####      print(f"Plot written to: {output_file}")
 
 # OLD VERSION OF THIS FUNCTION
 ###  def make_plot(results1, results2, output_file):
