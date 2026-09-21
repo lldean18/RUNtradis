@@ -577,6 +577,86 @@ def write_results(results, output_file):
     print(f"\nResults written to: {output_file}")
 
 
+## NEW VERSION OF THIS FUNCTION TO SPLIT PLOT IN 2
+##  def make_plot(results1, results2, output_file):
+##      """
+##      Plot two separate histograms, one above the other.
+##  
+##      The two histograms have independent x-axis scales so that
+##      distributions with very different ranges can be seen clearly.
+##      """
+##  
+##      values1 = [result["total"] for result in results1]
+##      values2 = [result["total"] for result in results2]
+##  
+##      if not values1:
+##          raise ValueError(
+##              "No genes with annotations were found in the essential genes list."
+##          )
+##  
+##      if not values2:
+##          raise ValueError(
+##              "No genes with annotations were found in the non-essential genes list."
+##          )
+##  
+##      # Create two vertically stacked plots with independent x axes.
+##      fig, axes = plt.subplots(
+##          2,
+##          1,
+##          figsize=(10, 10)
+##      )
+##  
+##      # ---------------------------------------------------------
+##      # Essential genes
+##      # ---------------------------------------------------------
+##  
+##      axes[0].hist(
+##          values1,
+##          bins=200,
+##          alpha=0.7
+##      )
+##  
+##      axes[0].set_xlabel("Insertion sites per gene")
+##      axes[0].set_ylabel("Number of genes")
+##      axes[0].set_title("Essential genes")
+##  
+##      # ---------------------------------------------------------
+##      # Non-essential genes
+##      # ---------------------------------------------------------
+##  
+##      axes[1].hist(
+##          values2,
+##          bins=200,
+##          alpha=0.7
+##      )
+##  
+##      axes[1].set_xlabel("Insertion sites per gene")
+##      axes[1].set_ylabel("Number of genes")
+##      axes[1].set_title("Non-essential genes")
+##  
+##      fig.suptitle(
+##          "Distribution of insertion sites per gene",
+##          fontsize=16
+##      )
+##  
+##      plt.tight_layout()
+##  
+##      # Leave room for the overall title.
+##      plt.subplots_adjust(
+##          top=0.92
+##      )
+##  
+##      plt.savefig(
+##          output_file,
+##          dpi=300,
+##          bbox_inches="tight"
+##      )
+##  
+##      plt.close()
+##  
+##      print(f"Plot written to: {output_file}")
+
+# OLD VERSION OF THIS FUNCTION
 def make_plot(results1, results2, output_file):
     """
     Plot the distribution of total insertion sites per gene
@@ -607,20 +687,20 @@ def make_plot(results1, results2, output_file):
     if min_value == max_value:
         bins = 10
     else:
-        bins = 30
+        bins = 300
 
     plt.hist(
         values1,
         bins=bins,
-        alpha=0.6,
-        label="Gene list 1",
+        alpha=0.7,
+        label="essential genes",
     )
 
     plt.hist(
         values2,
         bins=bins,
-        alpha=0.6,
-        label="Gene list 2",
+        alpha=0.7,
+        label="non-essential genes",
     )
 
     plt.xlabel("Insertion sites per gene")
@@ -778,14 +858,14 @@ def main():
     with open(combined_results_file, "w") as outfile:
 
         outfile.write(
-            "gene_list\tgene\tannotation_name\tchromosome\t"
-            "start\tend\tstrand\tvalue1_sum\tvalue2_sum\ttotal\n"
+            "gene_group\tgene\tannotation_name\tchromosome\t"
+            "start\tend\tstrand\tinsertions_fwd_strand\tinsertions_rev_strand\ttotal_insertions\n"
         )
 
         for result in results1:
 
             outfile.write(
-                f"gene_list_1\t"
+                f"essential_genes\t"
                 f"{result['gene']}\t"
                 f"{result['annotation_name']}\t"
                 f"{result['chromosome']}\t"
@@ -800,7 +880,7 @@ def main():
         for result in results2:
 
             outfile.write(
-                f"gene_list_2\t"
+                f"non-essential_genes\t"
                 f"{result['gene']}\t"
                 f"{result['annotation_name']}\t"
                 f"{result['chromosome']}\t"
