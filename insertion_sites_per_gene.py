@@ -337,7 +337,7 @@ def get_gene_name_from_feature(feature):
     return None
 
 
-def parse_embl_genes(embl_file):
+def parse_embl_genes(embl_file, contigs):
     """
     Parse EMBL annotations.
 
@@ -360,14 +360,32 @@ def parse_embl_genes(embl_file):
 
     genes = {}
 
+    # Get chromosome/contig names from the FASTA.
+    fasta_contig_names = [name for name, length in contigs]
+
+    # If there is only one FASTA contig, use its name for all
+    # EMBL features. This handles EMBL files with generic IDs
+    # such as "XXX".
+    if len(fasta_contig_names) == 1:
+        embl_chromosome = fasta_contig_names[0]
+    else:
+        embl_chromosome = None
+
     for record in SeqIO.parse(embl_file, "embl"):
 
-        chromosome = record.id
+        if embl_chromosome is not None:
+            chromosome = embl_chromosome
+        else:
+            chromosome = record.id
 
         for feature in record.features:
 
-            # We are primarily interested in gene/CDS features.
-            if feature.type not in {"gene", "CDS"}:
+            # Use gene features only.
+            #
+            # This avoids counting the same gene twice when the
+            # EMBL file contains both a gene feature and a CDS
+            # feature with the same gene name.
+            if feature.type != "gene":
                 continue
 
             gene_name = get_gene_name_from_feature(feature)
@@ -712,7 +730,7 @@ def main():
     # 6. Parse EMBL
     # ---------------------------------------------------------
 
-    embl_genes = parse_embl_genes(args.embl)
+    embl_genes = parse_embl_genes(args.embl, contigs)
 
     # ---------------------------------------------------------
     # 7. Calculate counts for gene list 1
