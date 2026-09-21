@@ -656,7 +656,7 @@ def write_results(results, output_file):
 ##  
 ##      print(f"Plot written to: {output_file}")
 
-# OLD VERSION OF THIS FUNCTION
+# newest version of function
 def make_plot(results1, results2, output_file):
     """
     Plot the distribution of total insertion sites per gene
@@ -678,27 +678,38 @@ def make_plot(results1, results2, output_file):
 
     plt.figure(figsize=(10, 7))
 
-    # Use automatically determined bins covering both distributions.
-    all_values = values1 + values2
+    # Width of each histogram bin.
+    bin_width = 100
 
-    min_value = min(all_values)
-    max_value = max(all_values)
+    # Create separate bin ranges, but with the same bin width.
+    min1 = min(values1)
+    max1 = max(values1)
 
-    if min_value == max_value:
-        bins = 10
-    else:
-        bins = 300
+    min2 = min(values2)
+    max2 = max(values2)
+
+    bins1 = range(
+        int(min1 // bin_width) * bin_width,
+        int(max1 // bin_width + 2) * bin_width,
+        bin_width
+    )
+
+    bins2 = range(
+        int(min2 // bin_width) * bin_width,
+        int(max2 // bin_width + 2) * bin_width,
+        bin_width
+    )
 
     plt.hist(
         values1,
-        bins=bins,
+        bins=bins1,
         alpha=0.7,
         label="essential genes",
     )
 
     plt.hist(
         values2,
-        bins=bins,
+        bins=bins2,
         alpha=0.7,
         label="non-essential genes",
     )
@@ -720,6 +731,71 @@ def make_plot(results1, results2, output_file):
     plt.close()
 
     print(f"Plot written to: {output_file}")
+
+# OLD VERSION OF THIS FUNCTION
+###  def make_plot(results1, results2, output_file):
+###      """
+###      Plot the distribution of total insertion sites per gene
+###      for the two gene lists.
+###      """
+###  
+###      values1 = [result["total"] for result in results1]
+###      values2 = [result["total"] for result in results2]
+###  
+###      if not values1:
+###          raise ValueError(
+###              "No genes with annotations were found in gene list 1."
+###          )
+###  
+###      if not values2:
+###          raise ValueError(
+###              "No genes with annotations were found in gene list 2."
+###          )
+###  
+###      plt.figure(figsize=(10, 7))
+###  
+###      # Use automatically determined bins covering both distributions.
+###      all_values = values1 + values2
+###  
+###      min_value = min(all_values)
+###      max_value = max(all_values)
+###  
+###      if min_value == max_value:
+###          bins = 100
+###      else:
+###          bins = 100
+###  
+###      plt.hist(
+###          values1,
+###          bins=bins,
+###          alpha=0.7,
+###          label="essential genes",
+###      )
+###  
+###      plt.hist(
+###          values2,
+###          bins=bins,
+###          alpha=0.7,
+###          label="non-essential genes",
+###      )
+###  
+###      plt.xlabel("Insertion sites per gene")
+###      plt.ylabel("Number of genes")
+###      plt.title("Distribution of insertion sites per gene")
+###  
+###      plt.legend()
+###  
+###      plt.tight_layout()
+###  
+###      plt.savefig(
+###          output_file,
+###          dpi=300,
+###          bbox_inches="tight"
+###      )
+###  
+###      plt.close()
+###  
+###      print(f"Plot written to: {output_file}")
 
 
 def main():
