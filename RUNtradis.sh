@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # script to perform read trimming for tradis
-# and run tradis with optimisation
+# and run tradis with optimization
+
 
 #SBATCH --job-name=RUNtradis
 #SBATCH --partition=defq
@@ -308,6 +309,11 @@ TRADIS_GIS_COMMAND=(
     "$OUTPUT_DIRECTORY"/biotradis/biotradis.insert_site_plot.gz
     )
 
+TRADIS_PLOT_COMMAND=(
+    tradis_plot
+    -f "$OUTPUT_DIRECTORY"/biotradis/$(basename ${INPUT_FASTQ}).mapped.bam
+    )
+
 ###############################################################################
 # Run commands 
 ###############################################################################
@@ -369,6 +375,16 @@ printf ' %q' "${TRADIS_GIS_COMMAND[@]}"
 echo
 echo
 "${TRADIS_GIS_COMMAND[@]}"
+echo
+echo
+
+###################
+
+echo "Running tradis_plot command:"
+printf ' %q' "${TRADIS_PLOT_COMMAND[@]}"
+echo
+echo
+"${TRADIS_PLOT_COMMAND[@]}"
 echo
 echo
 
