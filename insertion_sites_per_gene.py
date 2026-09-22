@@ -629,7 +629,7 @@ def make_plot(results1, results2, output_file):
     )[:2]
 
     # Label the two highest-scoring genes with automatic offsets.
-    offsets = [-25, 25]
+    offsets = [-2, 2]
 
     for result, offset in zip(top1, offsets):
         axes[0].annotate(
@@ -639,7 +639,7 @@ def make_plot(results1, results2, output_file):
             textcoords="offset points",
             ha="center",
             va="bottom",
-            rotation=90
+            rotation=0
         )
 
     # ---------------------------------------------------------
@@ -672,7 +672,7 @@ def make_plot(results1, results2, output_file):
             textcoords="offset points",
             ha="center",
             va="bottom",
-            rotation=90
+            rotation=0
         )
 
     fig.suptitle(
