@@ -39,6 +39,15 @@ Optional arguments:
     -t, --tag         DNA sequence of transposon tag
                       Default: CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
 
+    -m, --mismatches  Number of mismatches allowed when matching the transposon tag
+                      Default: 6
+
+    -q, --quality     Minimum mapping quality score to use a read
+                      Default: 0 (must be 0 if you want to retain multi-mapping reads, e.g. so repetitive regions are not incorrectly labelled essential)
+
+    -p, --percentage  Minimum percentage of identical bases between read and reference genome
+                      Default: 0.90 (90%)
+
     -h, --help        Show this help message
 
 Example:
@@ -47,7 +56,10 @@ Example:
         --output results \
         --reference /path/to/reference.fasta \
         --annotation /path/to/annotation.embl \
-        --tag CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG
+        --tag CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG \
+        --mismatches 6 \
+        --quality 0 \
+        --percentage 0.90
 EOF
     exit 1
 }
@@ -59,14 +71,17 @@ EOF
 REFERENCE_GENOME="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.fna"
 GENOME_ANNOTATION="/share/bryant_lab/reference_genomes/GCF_000750555.1_ASM75055v1_genomic.embl"
 TRANSPOSON_TAG="CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG"
+MISMATCHES="6"
+QUALITY="0"
+PERCENTAGE="0.90"
 
 ###############################################################################
 # Parse arguments
 ###############################################################################
 
 TEMP=$(getopt \
-    --options i:o:r:a:t:h \
-    --longoptions input:,output:,reference:,annotation:,tag:,help \
+    --options i:o:r:a:t:m:q:p:h \
+    --longoptions input:,output:,reference:,annotation:,tag:,mismatches:,quality:,percentage:,help \
     --name "$0" \
     -- "$@"
 )
@@ -98,6 +113,18 @@ while true; do
             ;;
         -t|--tag)
             TRANSPOSON_TAG="$2"
+            shift 2
+            ;;
+        -m|--mismatches)
+            MISMATCHES="$2"
+            shift 2
+            ;;
+        -q|--quality)
+            QUALITY="$2"
+            shift 2
+            ;;
+        -p|--percentage)
+            PERCENTAGE="$2"
             shift 2
             ;;
         -h|--help)
@@ -224,28 +251,31 @@ echo
 echo "RUNtradis job"
 echo "============="
 echo
-echo "Job ID:              ${SLURM_JOB_ID:-not-running-under-slurm}"
-echo "Job name:            ${SLURM_JOB_NAME:-unknown}"
-echo "Compute node:        $(hostname)"
-echo "Start time:          $(date)"
+echo "Job ID:                      ${SLURM_JOB_ID:-not-running-under-slurm}"
+echo "Job name:                    ${SLURM_JOB_NAME:-unknown}"
+echo "Compute node:                $(hostname)"
+echo "Start time:                  $(date)"
 echo
-echo "FastQC location:     $(command -v fastqc)"
-echo "FastQC version:      $(fastqc --version 2>&1 | head -n 1)"
-echo "MultiQC location:    $(command -v multiqc)"
-echo "MultiQC version:     $(multiqc --version 2>&1 | head -n 1)"
-echo "fastp location:      $(command -v fastp)"
-echo "fastp version:       $(fastp --version 2>&1 | head -n 1)"
-echo "cutadapt location:   $(command -v cutadapt)"
-echo "cutadapt version:    $(cutadapt --version 2>&1 | head -n 1)"
-echo "biotradis location:  $(command -v bacteria_tradis)"
-echo "biotradis version:   1.4.5"
+echo "FastQC location:             $(command -v fastqc)"
+echo "FastQC version:              $(fastqc --version 2>&1 | head -n 1)"
+echo "MultiQC location:            $(command -v multiqc)"
+echo "MultiQC version:             $(multiqc --version 2>&1 | head -n 1)"
+echo "fastp location:              $(command -v fastp)"
+echo "fastp version:               $(fastp --version 2>&1 | head -n 1)"
+echo "cutadapt location:           $(command -v cutadapt)"
+echo "cutadapt version:            $(cutadapt --version 2>&1 | head -n 1)"
+echo "biotradis location:          $(command -v bacteria_tradis)"
+echo "biotradis version:           1.4.5"
 echo
-echo "Input FASTQ:         $INPUT_FASTQ"
-echo "Output directory:    $OUTPUT_DIRECTORY"
-echo "Reference genome:    $REFERENCE_GENOME"
-echo "Transposon tag:      $TRANSPOSON_TAG"
+echo "Input FASTQ:                 $INPUT_FASTQ"
+echo "Output directory:            $OUTPUT_DIRECTORY"
+echo "Reference genome:            $REFERENCE_GENOME"
+echo "Transposon tag:              $TRANSPOSON_TAG"
+echo "Mismatches allowed in tag:   $MISMATCHES"
+echo "Min read mapping quality:    $QUALITY"
+echo "Min read / ref match:        $PERCENTAGE"
 echo
-echo "CPU threads:         $THREADS"
+echo "CPU threads:                 $THREADS"
 echo
 
 ###############################################################################
@@ -296,9 +326,9 @@ TRADIS_COMMAND=(
     --smalt_r 0
     --smalt_k 10
     --smalt_s 1
-    --smalt_y .90
-    -m 0
-    -mm 15
+    --smalt_y "$PERCENTAGE"
+    -m "$QUALITY"
+    -mm "$MISMATCHES"
     -f "$OUTPUT_DIRECTORY"/biotradis/files.txt
     -t "$TRANSPOSON_TAG"
     -r "$REFERENCE_GENOME")
@@ -309,9 +339,9 @@ TRADIS_GIS_COMMAND=(
     "$OUTPUT_DIRECTORY"/biotradis/biotradis.insert_site_plot.gz
     )
 
-TRADIS_PLOT_COMMAND=(
-    tradis_plot
-    -f "$OUTPUT_DIRECTORY"/biotradis/$(basename ${INPUT_FASTQ}).mapped.bam
+GENE_ESSENTIALITY_COMMAND=(
+    tradis_essentiality.R
+    "$OUTPUT_DIRECTORY"/biotradis/biotradis.tradis_gene_insert_sites.csv
     )
 
 ###############################################################################
@@ -380,11 +410,11 @@ echo
 
 ###################
 
-echo "Running tradis_plot command:"
-printf ' %q' "${TRADIS_PLOT_COMMAND[@]}"
+echo "Running gene_essentiality command:"
+printf ' %q' "${GENE_ESSENTIALITY_COMMAND[@]}"
 echo
 echo
-"${TRADIS_PLOT_COMMAND[@]}"
+"${GENE_ESSENTIALITY_COMMAND[@]}"
 echo
 echo
 
