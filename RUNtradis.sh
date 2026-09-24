@@ -23,7 +23,7 @@ set -euo pipefail
 usage() {
     cat <<'EOF'
 Usage:
-    sbatch RUNtradis.sh --input INPUT_FASTQ --output OUTPUT_DIRECTORY [OPTIONS]
+    sbatch /share/bryant_lab/RUNtradis.sh --input INPUT_FASTQ --output OUTPUT_DIRECTORY [OPTIONS]
 
 Required arguments:
     -i, --input       input FASTQ file (must be compressed with gzip)
@@ -51,9 +51,9 @@ Optional arguments:
     -h, --help        Show this help message
 
 Example:
-    sbatch RUNtradis.sh \
+    sbatch /share/bryant_lab/RUNtradis.sh \
         --input /path/to/file.fastq.gz \
-        --output results \
+        --output ~/results \
         --reference /path/to/reference.fasta \
         --annotation /path/to/annotation.embl \
         --tag CGAGCTCGAATTCATCGATGATGGTTGAGATGTGTATAAGAGACAG \
@@ -333,17 +333,6 @@ TRADIS_COMMAND=(
     -t "$TRANSPOSON_TAG"
     -r "$REFERENCE_GENOME")
 
-TRADIS_GIS_COMMAND=(
-    tradis_gene_insert_sites
-    "$GENOME_ANNOTATION"
-    "$OUTPUT_DIRECTORY"/biotradis/biotradis.insert_site_plot.gz
-    )
-
-GENE_ESSENTIALITY_COMMAND=(
-    tradis_essentiality.R
-    "$OUTPUT_DIRECTORY"/biotradis/biotradis.tradis_gene_insert_sites.csv
-    )
-
 ###############################################################################
 # Run commands 
 ###############################################################################
@@ -400,23 +389,63 @@ echo
 
 ###################
 
-echo "Running tradis_gene_insert_sites command:"
-printf ' %q' "${TRADIS_GIS_COMMAND[@]}" 
-echo
-echo
-"${TRADIS_GIS_COMMAND[@]}"
-echo
-echo
+# loop for this command to run over multiple files if there are multiple contigs
+while IFS= read -r file; do
+    echo "Running tradis_gene_insert_sites command for file: $file"
+    echo
+    
+    TRADIS_GIS_COMMAND=(
+        tradis_gene_insert_sites
+        "$GENOME_ANNOTATION"
+        "$file"
+        )
+    
+    echo "Running tradis_gene_insert_sites command:"
+    printf ' %q' "${TRADIS_GIS_COMMAND[@]}" 
+    echo
+    echo
+    "${TRADIS_GIS_COMMAND[@]}"
+    echo
+    echo
+
+done < <(find "$OUTPUT_DIRECTORY/biotradis" -maxdepth 1 -type f -name '*.insert_site_plot.gz')
+
+#echo "Running tradis_gene_insert_sites command:"
+#printf ' %q' "${TRADIS_GIS_COMMAND[@]}" 
+#echo
+#echo
+#"${TRADIS_GIS_COMMAND[@]}"
+#echo
+#echo
 
 ###################
 
-echo "Running gene_essentiality command:"
-printf ' %q' "${GENE_ESSENTIALITY_COMMAND[@]}"
-echo
-echo
-"${GENE_ESSENTIALITY_COMMAND[@]}"
-echo
-echo
+while IFS= read -r file; do
+    echo "Running gene_essentiality command for file: $file"
+    echo
+
+    GENE_ESSENTIALITY_COMMAND=(
+        tradis_essentiality.R
+        "$file"
+        )
+
+    echo "Running gene_essentiality command:"
+    printf ' %q' "${GENE_ESSENTIALITY_COMMAND[@]}"
+    echo
+    echo
+    "${GENE_ESSENTIALITY_COMMAND[@]}"
+    echo
+    echo
+
+done < <(find "$OUTPUT_DIRECTORY/biotradis" -maxdepth 1 -type f -name '*.tradis_gene_insert_sites.csv')
+
+# echo "Running gene_essentiality command:"
+# printf ' %q' "${GENE_ESSENTIALITY_COMMAND[@]}"
+# echo
+# echo
+# "${GENE_ESSENTIALITY_COMMAND[@]}"
+# echo
+# echo
 
 ###############################################################################
 # Cleanup environment
