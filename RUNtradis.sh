@@ -322,7 +322,7 @@ CUTADAPT_ADAPTER_COMMAND=(
 CUTADAPT_TAG_COMMAND=(
     cutadapt
     --cores $THREADS
-    -a "$TRANSPOSON_TAG"
+    -g "$TRANSPOSON_TAG"
     -e "$MISMATCHES"
     --overlap 37
     --action=retain
