@@ -312,7 +312,6 @@ CUTADAPT_COMMAND=(
     cutadapt
     --cores $THREADS
     -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
-    --revcomp
     --poly-a
     --minimum-length 50
     --info-file "$OUTPUT_DIRECTORY"/reports/cutadapt/$(basename ${INPUT_FASTQ})_info.tsv
@@ -378,7 +377,7 @@ echo
 ###################
 
 echo "Running tradis command:"
-echo "$INPUT_FASTQ" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
+echo "$OUTPUT_DIRECTORY/trimmed_fastqs/2_cutadapt/$(basename ${INPUT_FASTQ})" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
 printf ' %q' "${TRADIS_COMMAND[@]}" 
 echo
 echo
@@ -410,14 +409,6 @@ while IFS= read -r file; do
 
 done < <(find "$OUTPUT_DIRECTORY/biotradis" -maxdepth 1 -type f -name '*.insert_site_plot.gz')
 
-#echo "Running tradis_gene_insert_sites command:"
-#printf ' %q' "${TRADIS_GIS_COMMAND[@]}" 
-#echo
-#echo
-#"${TRADIS_GIS_COMMAND[@]}"
-#echo
-#echo
-
 ###################
 
 while IFS= read -r file; do
@@ -438,14 +429,6 @@ while IFS= read -r file; do
     echo
 
 done < <(find "$OUTPUT_DIRECTORY/biotradis" -maxdepth 1 -type f -name '*.tradis_gene_insert_sites.csv')
-
-# echo "Running gene_essentiality command:"
-# printf ' %q' "${GENE_ESSENTIALITY_COMMAND[@]}"
-# echo
-# echo
-# "${GENE_ESSENTIALITY_COMMAND[@]}"
-# echo
-# echo
 
 ###############################################################################
 # Cleanup environment
