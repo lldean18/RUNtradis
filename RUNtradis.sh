@@ -235,6 +235,7 @@ mkdir -p "$OUTPUT_DIRECTORY"/reports/cutadapt
 mkdir -p "$OUTPUT_DIRECTORY"/trimmed_fastqs
 mkdir -p "$OUTPUT_DIRECTORY"/trimmed_fastqs/1_fastp
 mkdir -p "$OUTPUT_DIRECTORY"/trimmed_fastqs/2_cutadapt
+mkdir -p "$OUTPUT_DIRECTORY"/trimmed_fastqs/3_cutadapt
 mkdir -p "$OUTPUT_DIRECTORY"/biotradis
 
 if [[ ! -w "$OUTPUT_DIRECTORY" ]]; then
@@ -308,15 +309,28 @@ FASTP_COMMAND=(
     --html "$OUTPUT_DIRECTORY"/reports/fastp/$(basename ${INPUT_FASTQ})_fastp.html
     --json "$OUTPUT_DIRECTORY"/reports/fastp/$(basename ${INPUT_FASTQ})_fastp.json)
 
-CUTADAPT_COMMAND=(
+CUTADAPT_ADAPTER_COMMAND=(
     cutadapt
     --cores $THREADS
     -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
     --poly-a
     --minimum-length 50
-    --info-file "$OUTPUT_DIRECTORY"/reports/cutadapt/$(basename ${INPUT_FASTQ})_info.tsv
+    --info-file "$OUTPUT_DIRECTORY"/reports/cutadapt/$(basename ${INPUT_FASTQ})_adapter_info.tsv
     -o "$OUTPUT_DIRECTORY"/trimmed_fastqs/2_cutadapt/$(basename ${INPUT_FASTQ})
     "$OUTPUT_DIRECTORY"/trimmed_fastqs/1_fastp/$(basename ${INPUT_FASTQ}))
+
+CUTADAPT_TAG_COMMAND=(
+    cutadapt
+    --cores $THREADS
+    -g "$TRANSPOSON_TAG"
+    -e "$MISMATCHES"
+    --overlap 37
+    --action=retain
+    --info-file "$OUTPUT_DIRECTORY"/reports/cutadapt/$(basename ${INPUT_FASTQ})_tradis_tag_info.tsv
+    -o "$OUTPUT_DIRECTORY"/trimmed_fastqs/3_cutadapt/$(basename ${INPUT_FASTQ})
+    "$OUTPUT_DIRECTORY"/trimmed_fastqs/2_cutadapt/$(basename ${INPUT_FASTQ}))
+
+# if you wanted to throw away the reads without the tag add --discard-untrimmed to the cutadapt command above
 
 TRADIS_COMMAND=(
     bacteria_tradis
@@ -366,18 +380,28 @@ echo
 
 ###################
 
-echo "Running cutadapt command:"
-printf ' %q' "${CUTADAPT_COMMAND[@]}"
+echo "Running cutadapt 3' adapter removal command:"
+printf ' %q' "${CUTADAPT_ADAPTER_COMMAND[@]}"
 echo
 echo
-"${CUTADAPT_COMMAND[@]}"
+"${CUTADAPT_ADAPTER_COMMAND[@]}"
+echo
+echo
+
+###################
+
+echo "Running cutadapt trim sequence before transposon tag command:"
+printf ' %q' "${CUTADAPT_TAG_COMMAND[@]}"
+echo
+echo
+"${CUTADAPT_TAG_COMMAND[@]}"
 echo
 echo
 
 ###################
 
 echo "Running tradis command:"
-echo "$OUTPUT_DIRECTORY/trimmed_fastqs/2_cutadapt/$(basename ${INPUT_FASTQ})" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
+echo "$OUTPUT_DIRECTORY/trimmed_fastqs/3_cutadapt/$(basename ${INPUT_FASTQ})" > "$OUTPUT_DIRECTORY"/biotradis/files.txt
 printf ' %q' "${TRADIS_COMMAND[@]}" 
 echo
 echo
