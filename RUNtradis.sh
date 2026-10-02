@@ -178,11 +178,10 @@ module load cutadapt-uon/gcc12.3.0/4.6
 module load biotradis-uon/1.4.5
 source /gpfs01/software/easybuild5-uon/software/Miniforge3/25.3.0-3/etc/profile.d/conda.sh
 conda activate /gpfs01/software/conda-extras/biotradis-1.4.5/envs
-module load samtools-uoneasy/1.18-GCC-12.3.0
-module load circos-uoneasy/0.69-9-GCCcore-11.3.0
 
 echo
-echo "... software loaded successfully"
+echo "... initial software loaded successfully"
+echo "due to a GCC version conflict samtools and circos software must be loaded separately at the end."
 
 ###############################################################################
 # Validate software and input
@@ -201,8 +200,6 @@ check_command multiqc
 check_command fastp
 check_command cutadapt
 check_command bacteria_tradis
-check_command samtools
-check_command circos
 
 if [[ ! -e "$INPUT_FASTQ" ]]; then
     echo "ERROR: Input FASTQ file or directory does not exist:" >&2
@@ -274,10 +271,6 @@ echo "cutadapt location:           $(command -v cutadapt)"
 echo "cutadapt version:            $(cutadapt --version 2>&1 | head -n 1)"
 echo "biotradis location:          $(command -v bacteria_tradis)"
 echo "biotradis version:           1.4.5"
-echo "samtools location:           $(command -v samtools)"
-echo "samtools version:            $(samtools --version 2>&1 | head -n 1)"
-echo "circos location:             $(command -v circos)"
-echo "circos version:              $(circos --version 2>&1 | head -n 1)"
 echo
 echo "Input FASTQ:                 $INPUT_FASTQ"
 echo "Output directory:            $OUTPUT_DIRECTORY"
@@ -465,9 +458,45 @@ while IFS= read -r file; do
 
 done < <(find "$OUTPUT_DIRECTORY/biotradis" -maxdepth 1 -type f -name '*.tradis_gene_insert_sites.csv')
 
+#################################################################################
+# Cleanup environment up to this point as circos requires a different GCC version
+#################################################################################
+
+module unload fastqc-uoneasy/0.12.1-Java-11
+module unload multiqc-uoneasy/1.14-foss-2023a
+module unload fastp-uoneasy/0.23.4-GCC-12.3.0
+module unload cutadapt-uon/gcc12.3.0/4.6
+module unload biotradis-uon/1.4.5
+module unload samtools-uoneasy/1.18-GCC-12.3.0
+conda deactivate
+
 ###############################################################################
 # Draw circos plot
 ###############################################################################
+
+# load samtools software
+module load samtools-uoneasy/1.22.1-GCC-14.2.0
+check_command samtools
+
+echo "samtools location:           $(command -v samtools)"
+echo "samtools version:            $(samtools --version 2>&1 | head -n 1)"
+echo
+echo
+
+# index the reference genome
+samtools faidx $REFERENCE_GENOME
+
+# unload samtools
+module unload samtools-uoneasy/1.22.1-GCC-14.2.0
+
+# load circos software
+module load circos-uoneasy/0.69-9-GCCcore-11.3.0
+check_command circos
+
+echo "circos location:           $(command -v circos)"
+echo "circos version:            $(circos --version 2>&1 | head -n 1)"
+echo
+echo
 
 echo "Preparing files for the circos plot..."
 echo
@@ -482,9 +511,6 @@ done > $OUTPUT_DIRECTORY/biotradis/combined.insert_site_plot.gz
 #####################
 ### PREP ASSEMBLY ###
 #####################
-
-# index the reference genome
-samtools faidx $REFERENCE_GENOME
 
 # generate the karyotype file
 awk '{print "chr - " $1 " " $1 " 0 " $2 " chr1"}' $REFERENCE_GENOME.fai > $OUTPUT_DIRECTORY/circos/karyotype.txt
@@ -760,14 +786,7 @@ circos
 # Cleanup environment
 ###############################################################################
 
-module unload fastqc-uoneasy/0.12.1-Java-11
-module unload multiqc-uoneasy/1.14-foss-2023a
-module unload fastp-uoneasy/0.23.4-GCC-12.3.0
-module unload cutadapt-uon/gcc12.3.0/4.6
-module unload biotradis-uon/1.4.5
-module unload samtools-uoneasy/1.18-GCC-12.3.0
 module unload circos-uoneasy/0.69-9-GCCcore-11.3.0
-conda deactivate
 
 ###############################################################################
 # Run summary
