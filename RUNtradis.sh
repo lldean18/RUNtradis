@@ -467,7 +467,6 @@ module unload multiqc-uoneasy/1.14-foss-2023a
 module unload fastp-uoneasy/0.23.4-GCC-12.3.0
 module unload cutadapt-uon/gcc12.3.0/4.6
 module unload biotradis-uon/1.4.5
-module unload samtools-uoneasy/1.18-GCC-12.3.0
 conda deactivate
 
 ###############################################################################
@@ -480,6 +479,9 @@ check_command samtools
 
 echo "samtools location:           $(command -v samtools)"
 echo "samtools version:            $(samtools --version 2>&1 | head -n 1)"
+echo
+echo
+echo "indexing the reference genome as the index file is needed for circos plotting..."
 echo
 echo
 
@@ -543,7 +545,6 @@ mv $OUTPUT_DIRECTORY/circos/genes_rev_strand.txt.tmp $OUTPUT_DIRECTORY/circos/ge
 ################################
 
 # convert the tradis insertion site output to bed format
-rm $OUTPUT_DIRECTORY/circos/insertions_fwd_strand.bed $OUTPUT_DIRECTORY/circos/insertions_rev_strand.bed
 zcat $OUTPUT_DIRECTORY/biotradis/combined.insert_site_plot.gz | awk '
 BEGIN {
     while ((getline < "'$REFERENCE_GENOME.fai'") > 0) {
