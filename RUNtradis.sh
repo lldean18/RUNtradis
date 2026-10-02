@@ -513,7 +513,7 @@ done > $OUTPUT_DIRECTORY/biotradis/combined.insert_site_plot.gz
 #####################
 
 # generate the karyotype file
-awk '{print "chr - " $1 " " $1 " 0 " $2 " chr1"}' $REFERENCE_GENOME.fai > $OUTPUT_DIRECTORY/circos/karyotype.txt
+awk '{print "chr - " $1 " " $1 " 0 " $2 " chr"}' $REFERENCE_GENOME.fai > $OUTPUT_DIRECTORY/circos/karyotype.txt
 
 ##############################
 ### PREP GENOME ANNOTATION ###
@@ -568,8 +568,12 @@ BEGIN {
 bedtools makewindows -g $REFERENCE_GENOME.fai -w 5000 > $OUTPUT_DIRECTORY/circos/windows_5kb.bed
 
 # count the insertions per window
-bedtools map -a $OUTPUT_DIRECTORY/circos/windows_5kb.bed -b $OUTPUT_DIRECTORY/circos/insertions_fwd_strand.bed -c 4 -o sum -null 0 > $OUTPUT_DIRECTORY/circos/insertions_fwd_strand_5kb.bed
-bedtools map -a $OUTPUT_DIRECTORY/circos/windows_5kb.bed -b $OUTPUT_DIRECTORY/circos/insertions_rev_strand.bed -c 4 -o sum -null 0 > $OUTPUT_DIRECTORY/circos/insertions_rev_strand_5kb.bed
+bedtools map -a $OUTPUT_DIRECTORY/circos/windows_5kb.bed \
+-b $OUTPUT_DIRECTORY/circos/insertions_fwd_strand.bed \
+-c 4 -o sum -null 0 > $OUTPUT_DIRECTORY/circos/insertions_fwd_strand_5kb.bed
+bedtools map -a $OUTPUT_DIRECTORY/circos/windows_5kb.bed \
+-b $OUTPUT_DIRECTORY/circos/insertions_rev_strand.bed \
+-c 4 -o sum -null 0 > $OUTPUT_DIRECTORY/circos/insertions_rev_strand_5kb.bed
 
 ##########################
 ### PREP THE ORIC FILE ###
