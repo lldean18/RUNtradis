@@ -178,7 +178,7 @@ module load cutadapt-uon/gcc12.3.0/4.6
 module load biotradis-uon/1.4.5
 source /gpfs01/software/easybuild5-uon/software/Miniforge3/25.3.0-3/etc/profile.d/conda.sh
 conda activate /gpfs01/software/conda-extras/biotradis-1.4.5/envs
-module load samtools-uoneasy/1.22.1-GCC-14.2.0
+module load samtools-uoneasy/1.18-GCC-12.3.0
 module load circos-uoneasy/0.69-9-GCCcore-11.3.0
 
 echo
@@ -765,8 +765,8 @@ module unload multiqc-uoneasy/1.14-foss-2023a
 module unload fastp-uoneasy/0.23.4-GCC-12.3.0
 module unload cutadapt-uon/gcc12.3.0/4.6
 module unload biotradis-uon/1.4.5
-module load samtools-uoneasy/1.22.1-GCC-14.2.0
-module load circos-uoneasy/0.69-9-GCCcore-11.3.0
+module unload samtools-uoneasy/1.18-GCC-12.3.0
+module unload circos-uoneasy/0.69-9-GCCcore-11.3.0
 conda deactivate
 
 ###############################################################################
