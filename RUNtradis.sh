@@ -780,12 +780,270 @@ grid_end       = 0.999r
 ##################
 
 echo
-echo "Running circos to generate the circos plot..."
+echo "Running circos to generate the circos plot with all contigs in the same plot..."
 echo
 
 cd $OUTPUT_DIRECTORY/circos
 circos
 
+##################################################################
+# Generate input files for making individual contig circos plots #
+##################################################################
+
+# set the window size in kb for plotting insertion sites
+window_size=2
+
+# make a list of the contigs in the genome
+CONTIG_LIST=( $(cut -f1 $REFERENCE_GENOME.fai) )
+
+# create karyotype files
+for CONTIG in ${CONTIG_LIST[@]}
+do
+grep "$CONTIG" $REFERENCE_GENOME.fai |  awk '{print "chr - " $1 " " $1 " 0 " $2 " chr"}' > karyotype_$CONTIG.txt
+done
+
+# create annotation files
+for CONTIG in ${CONTIG_LIST[@]}
+do
+# convert annotation to circos format
+awk 'match($1, "'$CONTIG'") && $3=="CDS"' $GENOME_ANNOTATION | awk '{print $1, $4, $5}' OFS="\t" > genes_$CONTIG.txt
+sort -k1,1 -k2,2n genes_$CONTIG.txt > genes_$CONTIG.txt.tmp && mv genes_$CONTIG.txt.tmp genes_$CONTIG.txt
+
+# make separate annotation files for genes on fwd and rev strands (strand info is 7th column)
+# fwd strand
+awk 'match($1, "'$CONTIG'") && $3=="CDS" && $7=="+"' $GENOME_ANNOTATION |
+awk '{print $1, $4, $5}' OFS="\t" > genes_fwd_strand_$CONTIG.txt
+sort -k1,1 -k2,2n genes_fwd_strand_$CONTIG.txt > genes_fwd_strand_$CONTIG.txt.tmp
+mv genes_fwd_strand_$CONTIG.txt.tmp genes_fwd_strand_$CONTIG.txt
+# rev strand
+awk 'match($1, "'$CONTIG'") && $3=="CDS" && $7=="-"' $GENOME_ANNOTATION |
+awk '{print $1, $4, $5}' OFS="\t" > genes_rev_strand_$CONTIG.txt
+sort -k1,1 -k2,2n genes_rev_strand_$CONTIG.txt > genes_rev_strand_$CONTIG.txt.tmp
+mv genes_rev_strand_$CONTIG.txt.tmp genes_rev_strand_$CONTIG.txt
+done
+
+# prep the insertion site files
+for CONTIG in ${CONTIG_LIST[@]}; do
+# reformat the tradis insertion site data to have the contig name and location at the start
+grep "$CONTIG" $REFERENCE_GENOME.fai > $CONTIG.info.txt
+zcat $OUTPUT_DIRECTORY/biotradis/*.$CONTIG.insert_site_plot.gz |
+awk -v OFS='\t' '
+NR == FNR {
+    chr = $1
+    pos = 0
+    next
+}
+{
+    print chr, pos, pos+1, $1 >> "insertions_fwd_strand_'$CONTIG'.bed"
+    print chr, pos, pos+1, $2 >> "insertions_rev_strand_'$CONTIG'.bed"
+    pos++
+}
+' $CONTIG.info.txt -
+# make genome windows to count insertion sites in
+bedtools makewindows -g $CONTIG.info.txt -w ${window_size}000 > windows_${window_size}kb_$CONTIG.bed
+# count the insertions per window
+bedtools map -a windows_${window_size}kb_$CONTIG.bed -b insertions_rev_strand_$CONTIG.bed -c 4 -o sum -null 0 > insertions_rev_strand_${window_size}kb_$CONTIG.bed
+# cleanup
+rm $CONTIG.info.txt
+done
+
+##########################
+### PREP THE ORIC FILE ###
+##########################
+
+for CONTIG in ${CONTIG_LIST[@]}; do
+awk 'match($1, "'$CONTIG'") && $3=="oriC" {
+    midpoint=int(($4+$5)/2)
+    print $1, midpoint, midpoint, 1
+}' OFS="\t" "$GENOME_ANNOTATION" > oriC_$CONTIG.txt
+
+awk 'match($1, "'$CONTIG'") && $3=="oriC" {
+    midpoint=int(($4+$5)/2)
+    print $1, midpoint, midpoint, "oriC"
+}' OFS="\t" "$GENOME_ANNOTATION" > oriC_label_$CONTIG.txt
+done
+
+##############################
+# prep the contig label file #
+##############################
+
+for CONTIG in ${CONTIG_LIST[@]}; do
+cut -f1,2 $REFERENCE_GENOME.fai | grep "$CONTIG" > tmp_$CONTIG
+awk -v OFS='\t' -v contig="$CONTIG" '{print $1, int($2/4) -1, int($2/4) +1, contig}' tmp_$CONTIG > ${CONTIG}_label.txt
+rm tmp_$CONTIG
+done
+
+#############################
+# PREP THE CIRCOS CONF FILE #
+#############################
+
+for CONTIG in ${CONTIG_LIST[@]}; do
+echo "
+<<include etc/colors_fonts_patterns.conf>>
+<<include etc/housekeeping.conf>>
+<<include ticks.conf>>
+
+<image>
+background = white
+dir   = .
+#dir  = conf(configdir)
+file  = circos_$CONTIG.png
+png   = yes
+svg   = yes
+
+# radius of inscribed circle in image
+radius         = 1500p
+# by default angle=0 is at 3 o'clock position
+angle_offset      = -90
+#angle_orientation = counterclockwise
+auto_alpha_colors = yes
+auto_alpha_steps  = 5
+
+</image>
+
+karyotype = karyotype_$CONTIG.txt
+
+########################################
+
+<ideogram>
+
+show_label       = yes
+label_font       = default
+#label_radius     = 1r + 110p
+label_radius     = 1.17r
+label_size       = 40
+label_parallel   = yes
+
+<spacing>
+default = 0.005r
+</spacing>
+
+radius*    = 0.85r
+thickness = 20p
+fill      = yes
+color = black
+</ideogram>
+
+########################################
+
+<plots>
+
+##############################
+# contig label in the centre #
+##############################
+
+<plot>
+type = text
+file = ${CONTIG}_label.txt
+r1 = 0.30r
+r0 = 0.01r
+label_size = 60
+label_font = bold
+color = black
+horizontal_align = left
+vertical_align = middle
+rpadding = -0.5r
+</plot>
+
+########################
+# gene annotation ring
+########################
+
+<plot>
+type = tile
+file = genes_fwd_strand_$CONTIG.txt
+r1   = 0.97r
+r0   = 0.92r
+color = dgrey
+layers = 1
+margin      = 0.05u
+orientation = center
+stroke_thickness = 1
+stroke_color     = dgrey
+thickness = 50
+padding = 8
+</plot>
+
+<plot>
+type = tile
+file = genes_rev_strand_$CONTIG.txt
+r1   = 0.90r
+r0   = 0.85r
+color = dgrey
+layers = 1
+margin = 0.05u
+orientation = center
+stroke_thickness = 1
+stroke_color = dgrey
+thickness = 50
+padding = 8
+</plot>
+
+############################
+### INSERTION SITE PLOTS ###
+############################
+
+<plot>
+type = histogram
+file = insertions_fwd_strand_${window_size}kb_$CONTIG.bed
+r1   = 0.80r
+r0   = 0.55r
+color = vdred
+fill_color = vdred
+thickness = 0.5
+</plot>
+
+<plot>
+type = histogram
+file = insertions_rev_strand_${window_size}kb_$CONTIG.bed
+r1   = 0.55r
+r0   = 0.30r
+orientation = in
+color = orange
+fill_color = orange
+thickness = 0.5
+</plot>
+
+##################
+### oriC marker ###
+##################
+
+<plot>
+type = scatter
+file = oriC_$CONTIG.txt
+r1 = 0.83r
+r0 = 0.81r
+color = dblue
+stroke_color = blue
+stroke_thickness = 2
+glyph = circle
+glyph_size = 22
+</plot>
+
+##################
+### oriC label ###
+##################
+
+<plot>
+type = text
+file = oriC_label_$CONTIG.txt
+r0 = 1.05r
+r1 = 1.15r
+label_size = 35p
+label_font = bold
+color = dblue
+orientation = out
+</plot>
+
+</plots>
+" > circos_$CONTIG.conf
+
+#############################################
+### RUN CIRCOS FOR EACH INDIVIDUAL CONTIG ###
+#############################################
+
+circos -conf circos_$CONTIG.conf
+done
 
 ###############################################################################
 # Cleanup environment
