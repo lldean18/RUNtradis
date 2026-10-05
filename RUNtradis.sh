@@ -613,8 +613,8 @@ karyotype = karyotype.txt
 
 show_label       = yes
 label_font       = default
-#label_radius     = 1r + 110p
-label_radius     = 1.17r
+label_radius     = 1r + 110p
+#label_radius     = 1.17r
 label_size       = 40
 label_parallel   = yes
 
