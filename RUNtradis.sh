@@ -522,20 +522,20 @@ awk '{print "chr - " $1 " " $1 " 0 " $2 " chr"}' $REFERENCE_GENOME.fai > $OUTPUT
 ##############################
 
 # convert annotation to circos format
-awk '$3=="CDS"' ${GENOME_ANNOTATION%.*}.gff | awk '{print $1, $4, $5}' OFS="\t" > $OUTPUT_DIRECTORY/circos/genes.txt
+awk 'tolower($3) == "cds" || tolower($3) == "gene"' ${GENOME_ANNOTATION%.*}.gff | awk '{print $1, $4, $5}' OFS="\t" > $OUTPUT_DIRECTORY/circos/genes.txt
 sort -k1,1 -k2,2n $OUTPUT_DIRECTORY/circos/genes.txt > $OUTPUT_DIRECTORY/circos/genes.txt.tmp
 mv $OUTPUT_DIRECTORY/circos/genes.txt.tmp $OUTPUT_DIRECTORY/circos/genes.txt
 
 # make separate annotation files for genes on fwd and rev strands (strand info is 7th column)
 
 # fwd strand
-awk '$3=="CDS" && $7=="+"' ${GENOME_ANNOTATION%.*}.gff |
+awk '(tolower($3) == "cds" || tolower($3) == "gene") && $7=="+"' ${GENOME_ANNOTATION%.*}.gff |
 awk '{print $1, $4, $5}' OFS="\t" > $OUTPUT_DIRECTORY/circos/genes_fwd_strand.txt
 sort -k1,1 -k2,2n $OUTPUT_DIRECTORY/circos/genes_fwd_strand.txt > $OUTPUT_DIRECTORY/circos/genes_fwd_strand.txt.tmp
 mv $OUTPUT_DIRECTORY/circos/genes_fwd_strand.txt.tmp $OUTPUT_DIRECTORY/circos/genes_fwd_strand.txt
 
 # rev strand
-awk '$3=="CDS" && $7=="-"' ${GENOME_ANNOTATION%.*}.gff |
+awk '(tolower($3) == "cds" || tolower($3) == "gene") && $7=="-"' ${GENOME_ANNOTATION%.*}.gff |
 awk '{print $1, $4, $5}' OFS="\t" > $OUTPUT_DIRECTORY/circos/genes_rev_strand.txt
 sort -k1,1 -k2,2n $OUTPUT_DIRECTORY/circos/genes_rev_strand.txt > $OUTPUT_DIRECTORY/circos/genes_rev_strand.txt.tmp
 mv $OUTPUT_DIRECTORY/circos/genes_rev_strand.txt.tmp $OUTPUT_DIRECTORY/circos/genes_rev_strand.txt
@@ -796,27 +796,34 @@ window_size=2
 # make a list of the contigs in the genome
 CONTIG_LIST=( $(cut -f1 $REFERENCE_GENOME.fai) )
 
-# create karyotype files
+##########################
+# create karyotype files #
+##########################
+
 for CONTIG in ${CONTIG_LIST[@]}
 do
 grep "$CONTIG" $REFERENCE_GENOME.fai |  awk '{print "chr - " $1 " " $1 " 0 " $2 " chr"}' > karyotype_$CONTIG.txt
 done
 
-# create annotation files
+###########################
+# create annotation files #
+###########################
+
 for CONTIG in ${CONTIG_LIST[@]}
 do
 # convert annotation to circos format
-awk 'match($1, "'$CONTIG'") && $3=="CDS"' $GENOME_ANNOTATION | awk '{print $1, $4, $5}' OFS="\t" > genes_$CONTIG.txt
+awk 'match($1, "'$CONTIG'") && (tolower($3) == "cds" || tolower($3) == "gene")' $GENOME_ANNOTATION |
+awk '{print $1, $4, $5}' OFS="\t" > genes_$CONTIG.txt
 sort -k1,1 -k2,2n genes_$CONTIG.txt > genes_$CONTIG.txt.tmp && mv genes_$CONTIG.txt.tmp genes_$CONTIG.txt
 
 # make separate annotation files for genes on fwd and rev strands (strand info is 7th column)
 # fwd strand
-awk 'match($1, "'$CONTIG'") && $3=="CDS" && $7=="+"' $GENOME_ANNOTATION |
+awk 'match($1, "'$CONTIG'") && (tolower($3) == "cds" || tolower($3) == "gene") && $7=="+"' $GENOME_ANNOTATION |
 awk '{print $1, $4, $5}' OFS="\t" > genes_fwd_strand_$CONTIG.txt
 sort -k1,1 -k2,2n genes_fwd_strand_$CONTIG.txt > genes_fwd_strand_$CONTIG.txt.tmp
 mv genes_fwd_strand_$CONTIG.txt.tmp genes_fwd_strand_$CONTIG.txt
 # rev strand
-awk 'match($1, "'$CONTIG'") && $3=="CDS" && $7=="-"' $GENOME_ANNOTATION |
+awk 'match($1, "'$CONTIG'") && (tolower($3) == "cds" || tolower($3) == "gene") && $7=="-"' $GENOME_ANNOTATION |
 awk '{print $1, $4, $5}' OFS="\t" > genes_rev_strand_$CONTIG.txt
 sort -k1,1 -k2,2n genes_rev_strand_$CONTIG.txt > genes_rev_strand_$CONTIG.txt.tmp
 mv genes_rev_strand_$CONTIG.txt.tmp genes_rev_strand_$CONTIG.txt
@@ -842,6 +849,7 @@ NR == FNR {
 # make genome windows to count insertion sites in
 bedtools makewindows -g $CONTIG.info.txt -w ${window_size}000 > windows_${window_size}kb_$CONTIG.bed
 # count the insertions per window
+bedtools map -a windows_${window_size}kb_$CONTIG.bed -b insertions_fwd_strand_$CONTIG.bed -c 4 -o sum -null 0 > insertions_fwd_strand_${window_size}kb_$CONTIG.bed
 bedtools map -a windows_${window_size}kb_$CONTIG.bed -b insertions_rev_strand_$CONTIG.bed -c 4 -o sum -null 0 > insertions_rev_strand_${window_size}kb_$CONTIG.bed
 # cleanup
 rm $CONTIG.info.txt
