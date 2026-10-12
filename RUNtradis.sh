@@ -812,18 +812,18 @@ done
 for CONTIG in ${CONTIG_LIST[@]}
 do
 # convert annotation to circos format
-awk -F'\t' -v contig=$CONTIG '$1 == contig && (tolower($3) == "cds" || tolower($3) == "gene")' $GENOME_ANNOTATION |
+awk -F'\t' -v contig=$CONTIG '$1 == contig && (tolower($3) == "cds" || tolower($3) == "gene")' ${GENOME_ANNOTATION%.*}.gff |
 awk -F'\t' '{print $1, $4, $5}' OFS="\t" > genes_$CONTIG.txt
 sort -k1,1 -k2,2n genes_$CONTIG.txt > genes_$CONTIG.txt.tmp && mv genes_$CONTIG.txt.tmp genes_$CONTIG.txt
 
 # make separate annotation files for genes on fwd and rev strands (strand info is 7th column)
 # fwd strand
-awk -F'\t' -v contig=$CONTIG '$1 == contig && (tolower($3) == "cds" || tolower($3) == "gene") && $7=="+"' $GENOME_ANNOTATION |
+awk -F'\t' -v contig=$CONTIG '$1 == contig && (tolower($3) == "cds" || tolower($3) == "gene") && $7=="+"' ${GENOME_ANNOTATION%.*}.gff |
 awk -F'\t' '{print $1, $4, $5}' OFS="\t" > genes_fwd_strand_$CONTIG.txt
 sort -k1,1 -k2,2n genes_fwd_strand_$CONTIG.txt > genes_fwd_strand_$CONTIG.txt.tmp
 mv genes_fwd_strand_$CONTIG.txt.tmp genes_fwd_strand_$CONTIG.txt
 # rev strand
-awk -F'\t' -v contig=$CONTIG '$1 == contig && (tolower($3) == "cds" || tolower($3) == "gene") && $7=="-"' $GENOME_ANNOTATION |
+awk -F'\t' -v contig=$CONTIG '$1 == contig && (tolower($3) == "cds" || tolower($3) == "gene") && $7=="-"' ${GENOME_ANNOTATION%.*}.gff |
 awk -F'\t' '{print $1, $4, $5}' OFS="\t" > genes_rev_strand_$CONTIG.txt
 sort -k1,1 -k2,2n genes_rev_strand_$CONTIG.txt > genes_rev_strand_$CONTIG.txt.tmp
 mv genes_rev_strand_$CONTIG.txt.tmp genes_rev_strand_$CONTIG.txt
