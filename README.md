@@ -3,6 +3,7 @@ Executable for read processing and optimising &amp; running tradis software from
 
 ## USEAGE:
 
+```
 Usage:
     sbatch /share/bryant_lab/RUNtradis.sh --input INPUT_FASTQ --output OUTPUT_DIRECTORY [OPTIONS]
 
@@ -41,6 +42,8 @@ Example:
         --mismatches 6 \
         --quality 0 \
         --percentage 0.90
+```
+
 
 
 
