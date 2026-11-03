@@ -1,6 +1,15 @@
 # RUNtradis
 Executable for read processing and optimising &amp; running tradis software from a single simple script.
 
+# How it works
+
+The RUNtradis.sh script does the following:
+
+1. Runs fastqc on the input fastq file and produces an initial QC report
+2. Trims poly G tails >4bp and then poly X tails >3bp from the 3' end of reads using fastp
+3. Trims illumina sequencing adapters and then poly A tails from the 3' end of reads then retains only reads >50bp using cutadapt
+4. 
+
 ## USEAGE:
 
 ```
