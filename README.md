@@ -5,16 +5,16 @@ Executable for read processing and optimising &amp; running tradis software from
 
 The RUNtradis.sh script does the following:
 
-1. Runs fastqc on the input fastq file and produces an initial QC report
-2. Trims poly G tails >4bp and then poly X tails >3bp from the 3' end of reads using fastp
-3. Trims illumina sequencing adapters and then poly A tails from the 3' end of reads then retains only reads >50bp using cutadapt
-4. Detects the transposon tag sequence at the 5' end of reads, requiring a minimum overlap of 37bp to identify a tag, and allowing N errors in the match (as specified by -m, --mismatches, Default: 6). If the tag is detected, all preceding bases at the 5' end are trimmed. If no tag is detected, reads are retained as they are with no further trimming to the 5' end.
-5. Runs bacteria_tradis with options to specify the number of mismatches allowed when matching the tradis tag (as specified by -m, --mismatches, Default: 6), the minimum percentage of identical bases between the rest of the read and the reference (as specified by -p, --percentage, Default: 0.90 (90%)), and the mapping quality score for mapping the read to the assembly (as specified by -q, --quality, Default: 0 (must be 0 if you want to retain multi-mapping reads, e.g. so repetitive regions are not incorrectly labelled essential))
-6. It then runs tradis_gene_insert_sites for each contig
-7. It runs tradis_essentiality.R for each contig
-8. Prepares input files for circos, counting the number of insertion sites in 5kb windows for the whole genome plot and 2kb windows for the plots of separate contigs
-9. Draws a circos plot for the whole genome
-10. Draws a separate circos plot for each contig in the reference
+1. Runs fastqc on the input fastq file and produces an initial QC report.
+2. Trims poly G tails >4bp and then poly X tails >3bp from the 3' end of reads using fastp.
+3. Trims illumina sequencing adapters and then poly A tails from the 3' end of reads then retains only reads >50bp using cutadapt.
+4. Detects the transposon tag sequence at the 5' end of reads, requiring a minimum overlap of 37bp to identify a tag, and allowing N errors in the match (as specified by -m, --mismatches, Default: 6). If the tag is detected, all preceding bases at the 5' end are trimmed. If no tag is detected, reads are retained as they are with no further trimming to the 5' end. This step uses cutadapt a second time.
+5. Runs bacteria_tradis with options to specify the number of mismatches allowed when matching the tradis tag (as specified by -m, --mismatches, Default: 6), the minimum percentage of identical bases between the rest of the read and the reference (as specified by -p, --percentage, Default: 0.90 (90%)), and the mapping quality score for mapping the read to the assembly (as specified by -q, --quality, Default: 0 (must be 0 if you want to retain multi-mapping reads, e.g. so repetitive regions are not incorrectly labelled essential)).
+6. It then runs tradis_gene_insert_sites for each contig.
+7. It runs tradis_essentiality.R for each contig.
+8. Prepares input files for circos, counting the number of insertion sites in 5kb windows for the whole genome plot and 2kb windows for the plots of separate contigs.
+9. Draws a circos plot for the whole genome.
+10. Draws a separate circos plot for each contig in the reference.
 
 
 ## USEAGE:
