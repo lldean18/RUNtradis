@@ -12,9 +12,9 @@ The RUNtradis.sh script does the following:
 5. Runs bacteria_tradis with the trimmed and filtered reads and options to specify the number of mismatches allowed when matching the tradis tag (as specified by -m, --mismatches, Default: 6), the minimum percentage of identical bases between the rest of the read and the reference (as specified by -p, --percentage, Default: 0.90 (90%)), and the mapping quality score for mapping the read to the assembly (as specified by -q, --quality, Default: 0 (must be 0 if you want to retain multi-mapping reads, e.g. so repetitive regions are not incorrectly labelled essential)).
 6. It then runs tradis_gene_insert_sites for each contig.
 7. It runs tradis_essentiality.R for each contig.
-8. Prepares input files for circos, counting the number of insertion sites in 5kb windows for the whole genome plot and 2kb windows for the plots of separate contigs.
-9. Draws a circos plot for the whole genome.
-10. Draws a separate circos plot for each contig in the reference.
+8. Prepares input files for circos using samtools and bedtools, counting the number of insertion sites in 5kb windows for the whole genome plot and 2kb windows for the plots of separate contigs.
+9. Draws a circos plot for the whole genome using circos software and a custom config file.
+10. Draws a separate circos plot for each contig in the reference using circos software and a custom config file.
 
 
 ## USEAGE:
